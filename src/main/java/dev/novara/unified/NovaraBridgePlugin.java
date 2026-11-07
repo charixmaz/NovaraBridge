@@ -17,6 +17,8 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
     private String syncStatus = "Not connected";
     @Override public void onEnable() {
         saveDefaultConfig();
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         Bukkit.getPluginManager().registerEvents(this,this);
         connect();
         Bukkit.getScheduler().runTaskTimer(this, () -> {
@@ -109,11 +111,11 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
     @Override public boolean onCommand(CommandSender sender,Command command,String label,String[] args) {
         if (!sender.hasPermission("novarabridge.admin")) { sender.sendMessage("§cNo permission."); return true; }
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            reloadConfig(); connect(); sender.sendMessage("§aBridge connections reloaded. Restart to apply sync interval changes.");
+            reloadConfig();getConfig().options().copyDefaults(true);saveConfig();connect(); sender.sendMessage("§aBridge connections reloaded. Restart to apply sync interval changes.");
         } else if (args.length > 0 && !args[0].equalsIgnoreCase("status")) {
             sender.sendMessage("/novarabridge status | reload"); return true;
         }
-        sender.sendMessage("§bNovaraBridge 0.1.0");
+        sender.sendMessage("§bNovaraBridge 0.1.1");
         sender.sendMessage("§7Jobs rank benefits: §f"+rankStatus);
         sender.sendMessage("§7LuckPerms rank sync: §f"+(sync == null ? syncStatus : sync.status()));
         sender.sendMessage("§7Economy: §f"+economyStatus());

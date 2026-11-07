@@ -17,4 +17,22 @@ class RankGroupsTest {
         assertEquals("novarabridge_rank_2",mapping.get(2));
         assertThrows(UnsupportedOperationException.class,() -> mapping.put(3,"other"));
     }
+    @Test void acceptsRanksSixAndSevenWithoutAllowingSourceFeedback() {
+        var mapping=RankGroups.validate(Map.of(6,"novarabridge_rank_6",7,"novarabridge_rank_7"),Set.of("rank6","vip"));
+        assertEquals("novarabridge_rank_7",mapping.get(7));
+        assertThrows(IllegalArgumentException.class,()->RankGroups.validate(mapping,Set.of("novarabridge_rank_6")));
+    }
+    @Test void newDefaultsPreserveExistingOwnerConfiguration() throws Exception {
+        var defaults=new org.bukkit.configuration.file.YamlConfiguration();
+        try(var stream=getClass().getResourceAsStream("/config.yml")){
+            defaults.load(new java.io.InputStreamReader(java.util.Objects.requireNonNull(stream),java.nio.charset.StandardCharsets.UTF_8));
+        }
+        var config=new org.bukkit.configuration.file.YamlConfiguration();
+        config.set("integrations.economy",false);config.set("rank-groups.6","custom_rank_six");
+        config.setDefaults(defaults);config.options().copyDefaults(true);
+        var restored=new org.bukkit.configuration.file.YamlConfiguration();restored.loadFromString(config.saveToString());
+        assertFalse(restored.getBoolean("integrations.economy"));
+        assertEquals("custom_rank_six",restored.getString("rank-groups.6"));
+        assertEquals("novarabridge_rank_7",restored.getString("rank-groups.7"));
+    }
 }

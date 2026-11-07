@@ -1,5 +1,5 @@
 name: NovaraBridge
-version: 0.1.0
+version: 0.1.1
 main: dev.novara.unified.NovaraBridgePlugin
 api-version: '26.1'
 softdepend: [NovaraJobs, NovaraRanksTags, LuckPerms, Vault, VaultUnlocked, Essentials]
