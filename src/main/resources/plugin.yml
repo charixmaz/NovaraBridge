@@ -1,0 +1,14 @@
+name: NovaraBridge
+version: 0.1.0
+main: dev.novara.unified.NovaraBridgePlugin
+api-version: '26.1'
+softdepend: [NovaraJobs, NovaraRanksTags, LuckPerms, Vault, VaultUnlocked, Essentials]
+loadbefore: [AstralLeaderboard]
+commands:
+  novarabridge:
+    aliases: [nb]
+    description: Inspect and reload plugin connections
+    permission: novarabridge.admin
+permissions:
+  novarabridge.admin:
+    default: op

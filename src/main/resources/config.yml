@@ -1,0 +1,14 @@
+integrations:
+  jobs-rank-benefits: true
+  ranks-luckperms: true
+  economy: true
+  jobs-leaderboard: true
+# Match only these dedicated groups; paid and source role groups are forbidden.
+# Groups are created automatically. Add benefit permissions with LuckPerms.
+rank-groups:
+  '1': novarabridge_rank_1
+  '2': novarabridge_rank_2
+  '3': novarabridge_rank_3
+  '4': novarabridge_rank_4
+  '5': novarabridge_rank_5
+sync-interval-seconds: 5
