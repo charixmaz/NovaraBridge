@@ -1,4 +1,4 @@
-# NovaraBridge 0.1.0
+# NovaraBridge 0.1.1
 
 Unified optional integrations for Paper 26.1.2 / Java 25:
 
@@ -13,7 +13,7 @@ ArcaneAlchemy is outside this release. No balances, rank ownership or job progre
 
 1. Stop the server and back up plugin data.
 2. Remove the old `NovaraRanksBridge` JAR. Do not run both bridges.
-3. Install NovaraBridge and the companion Jobs, Ranks & Tags 0.4.4, and AstralLeaderboard builds from this release. Replace existing JARs; do not leave duplicate versions.
+3. Install NovaraBridge and the companion Jobs, Ranks & Tags 0.7.0, and AstralLeaderboard builds from this release. Replace existing JARs; do not leave duplicate versions.
 4. Keep LuckPerms, EssentialsX and Vault (or a compatible VaultUnlocked build) installed.
 5. In `plugins/NovaraRanksTags/config.yml`, set `ranks-test-mode: false`. Existing configs are preserved, so this must be changed explicitly. The bridge refuses test-mode rank benefits.
 6. Start the server. Run `/novarabridge status` as an admin.
@@ -24,7 +24,7 @@ Jobs automatically uses the unified rank provider when this connection is ready;
 
 The source of progression rank remains NovaraRanksTags. Its `role-ranks` mapping of inherited LuckPerms groups takes precedence. Otherwise it uses the selected rank only when the player has `novara.ranks.rank.N`; unverified selections previously made in test mode fall back to rank 1. Paid rank groups never determine progression rank unless an admin explicitly puts them in the source plugin's role-ranks mapping.
 
-The bridge creates dedicated `novarabridge_rank_1` through `novarabridge_rank_5` groups. Add gameplay benefit permissions to those groups using LuckPerms. It never changes primary group, prefixes, tags or paid groups. It manages only direct membership nodes in the configured dedicated group names; reserve those names for this purpose.
+The bridge creates dedicated `novarabridge_rank_1` through `novarabridge_rank_7` groups. Add gameplay benefit permissions to those groups using LuckPerms. It never changes primary group, prefixes, tags or paid groups. It manages only direct membership nodes in the configured dedicated group names; reserve those names for this purpose.
 
 Do not put the dedicated groups in `role-ranks` or `paid-ranks`, or make them inherit source progression groups. This would create rank feedback. Direct name collisions are rejected. Do not grant `novara.ranks.rank.N` or legacy `novarajobs.rank.N` permissions through dedicated groups; grant unlock permission through your existing progression rules instead.
 
@@ -65,3 +65,10 @@ This release does not implement rank purchasing/unlock requirements or add new r
 - [AstralLeaderboard](https://github.com/charixmaz/AstralLeaderboard-/pull/3)
 
 The bridge source, tests and build workflow are maintained in this repository. Companion changes stay in their respective repositories.
+
+
+## 0.1.1 seven-rank defaults
+Adds novarabridge_rank_6 and novarabridge_rank_7 to default group mappings.
+Startup and reload add missing defaults while preserving owner overrides and disabled integrations.
+Use with Novara Ranks & Tags 0.7.0 for seven-rank progression.
+No economy or rank benefit amounts changed; existing Jobs/bank policies still apply.
