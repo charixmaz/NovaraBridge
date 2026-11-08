@@ -126,6 +126,9 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
     public java.util.List<String> rewardDescriptions(String rule){
         mainThread();return milestoneDelivery.describe(rule);
     }
+    public java.util.Map<Integer,java.util.List<String>> jobRewardSummaries(String job){
+        mainThread();return milestoneDelivery.jobSummaries(job);
+    }
     /** Checks tags/pouch tiers against the active source plugins and shows missing dependencies. */
     public java.util.List<String> rewardProblems(){
         mainThread();return milestoneDelivery.warnings();
@@ -173,6 +176,24 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
     @Override public boolean onCommand(CommandSender sender,Command command,String label,String[] args) {
         if (!sender.hasPermission("novarabridge.admin")) { sender.sendMessage("§cNo permission."); return true; }
         if(args.length>=1 && args[0].equalsIgnoreCase("rewards")){
+            if(args.length==5&&args[1].equalsIgnoreCase("resolve")){
+                try{
+                    int index=Integer.parseInt(args[3]);
+                    if(!Set.of("done","retry").contains(args[4].toLowerCase(Locale.ROOT)))
+                        throw new IllegalArgumentException("Choose done or retry");
+                    milestoneDelivery.resolve(args[2],index,args[4].equalsIgnoreCase("done"));
+                    sender.sendMessage("§aReward review updated; verify the external transaction first.");
+                }catch(Exception error){sender.sendMessage("§cCould not resolve: "+error.getMessage());}
+                return true;
+            }
+            if(args.length==3&&args[1].equalsIgnoreCase("pending")){
+                Player target=Bukkit.getPlayerExact(args[2]);
+                if(target==null){sender.sendMessage("§cPlayer must be online.");return true;}
+                var lines=milestoneDelivery.pendingDetails(target.getUniqueId());
+                if(lines.isEmpty())sender.sendMessage("§aNo pending rewards for "+target.getName());
+                for(String line:lines)sender.sendMessage("§e"+line);
+                return true;
+            }
             if(args.length==2&&args[1].equalsIgnoreCase("reload")){
                 try{milestoneDelivery.reload();sender.sendMessage("§aNovaraBridge rewards.yml reloaded.");}
                 catch(Exception invalid){sender.sendMessage("§cReward configuration rejected: "+invalid.getMessage());}
@@ -180,7 +201,7 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
             }
             sender.sendMessage("§bReward claims pending or requiring review: §f"+milestoneDelivery.pending());
             for(String note:milestoneDelivery.warnings())sender.sendMessage("§e"+note);
-            sender.sendMessage("§7/nb rewards reload | status");
+            sender.sendMessage("§7/nb rewards reload | pending <online-player> | resolve <operation> <index> done|retry");
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
