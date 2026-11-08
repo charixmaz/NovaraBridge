@@ -82,10 +82,18 @@ final class MilestoneDelivery {
     List<String> warnings() {
         Set<String> notes=new LinkedHashSet<>();
         for(String key:config.keys())for(String step:config.rule(key).actions()){
-            if(step.startsWith("tag:")&&active("NovaraRanksTags")==null)
-                notes.add("Missing NovaraRanksTags: tag grants wait");
-            if(step.startsWith("pouch:")&&active("NovaraPouches")==null)
-                notes.add("Missing NovaraPouches: pouch grants wait");
+            if(step.startsWith("tag:")){
+                var ranks=active("NovaraRanksTags");
+                if(ranks==null)notes.add("Missing NovaraRanksTags: tag grants wait");
+                else if(!invokeBoolean(ranks,"rewardTagExists",new Class<?>[]{String.class},step.substring(4)))
+                    notes.add("Invalid or missing NovaraRanksTags tag ID '"+step.substring(4)+"' at "+key);
+            }
+            if(step.startsWith("pouch:")){
+                var pouch=active("NovaraPouches");
+                if(pouch==null)notes.add("Missing NovaraPouches: pouch grants wait");
+                else if(!invokeBoolean(pouch,"rewardPouchExists",new Class<?>[]{String.class},step.split(":")[1]))
+                    notes.add("Invalid or missing NovaraPouches rarity '"+step.split(":")[1]+"' at "+key);
+            }
             if(step.startsWith("cash:")&&!bridge.economyStatus().startsWith("Ready:"))
                 notes.add("Economy unavailable: "+bridge.economyStatus());
             if(step.startsWith("permission:")&&active("LuckPerms")==null)
@@ -184,7 +192,8 @@ final class MilestoneDelivery {
     }
     private boolean preflight(Player player,String step){
         if(step.startsWith("tag:"))return active("NovaraRanksTags")!=null &&
-            invokeBoolean(active("NovaraRanksTags"),"rewardTagExists",new Class<?>[]{String.class},step.substring(4));
+            invokeBoolean(active("NovaraRanksTags"),"rewardTagReady",
+                new Class<?>[]{UUID.class,String.class},player.getUniqueId(),step.substring(4));
         if(step.startsWith("pouch:")){
             Plugin pouch=active("NovaraPouches");
             String[] s=step.split(":");
