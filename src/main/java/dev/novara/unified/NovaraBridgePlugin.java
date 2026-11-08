@@ -13,9 +13,12 @@ import java.util.function.Consumer;
 
 public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
     private RankSync sync;
+    private RewardJournal rewardJournal;
     private String rankStatus = "Not connected";
     private String syncStatus = "Not connected";
     @Override public void onEnable() {
+        try { rewardJournal = new RewardJournal(getDataFolder().toPath().resolve("reward-journal.properties")); }
+        catch (java.io.IOException error) { throw new IllegalStateException("Cannot load reward receipts; refusing payouts",error); }
         saveDefaultConfig();
         getConfig().options().copyDefaults(true);
         saveConfig();
@@ -102,6 +105,35 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         try { jobs.getClass().getMethod("astralLeaderboardSnapshot",Consumer.class).invoke(jobs,callback); }
         catch (ReflectiveOperationException e) { throw new IllegalStateException("Jobs snapshot API unavailable",e); }
     }
+    /** Astral owns reward configuration. Operation must remain season/category/place stable. */
+    public boolean astralReward(UUID player, String operation, long cents, List<String> commands) {
+        mainThread();
+        if (!enabled("astral-rewards")) throw new IllegalStateException("Astral rewards disabled in bridge");
+        if (player == null || operation == null || !operation.matches("astral:[0-9]+:[a-z]+:[0-9]+") || cents < 0 || cents > 100_000_000L)
+            throw new IllegalArgumentException("Invalid Astral reward request");
+        List<String> plan = new ArrayList<>();
+        if (cents > 0) {
+            if (!economyStatus().startsWith("Ready:")) throw new IllegalStateException(economyStatus());
+            plan.add("cash:"+cents);
+        }
+        String name = Bukkit.getOfflinePlayer(player).getName();
+        for (String template : List.copyOf(commands)) {
+            if (template == null || template.isBlank() || template.contains("\n") || template.contains("\r") || template.startsWith("/"))
+                throw new IllegalArgumentException("Reward commands must be nonempty single lines without leading slash");
+            if (template.contains("{player}") && (name == null || !name.matches("[A-Za-z0-9_]{1,16}")))
+                throw new IllegalStateException("Recipient name unavailable; retry once their name is known");
+            String resolved=template.replace("{uuid}",player.toString()).replace("{player}",name == null ? "" : name);
+            if (Bukkit.getCommandMap().getCommand(resolved.split(" ",2)[0]) == null)
+                throw new IllegalStateException("Reward command unavailable: "+resolved.split(" ",2)[0]);
+            plan.add("command:"+resolved);
+        }
+        if (plan.isEmpty()) throw new IllegalArgumentException("No reward actions configured");
+        try {
+            return rewardJournal.deliver(operation,player,plan,step -> step.startsWith("cash:")
+                ? economyCredit(player,Long.parseLong(step.substring(5)))
+                : Bukkit.dispatchCommand(Bukkit.getConsoleSender(),step.substring(8)));
+        } catch (java.io.IOException error) { throw new IllegalStateException("Reward receipt write failed; inspect before retrying",error); }
+    }
     @EventHandler public void pluginEnabled(PluginEnableEvent event) { reconnectLater(event.getPlugin()); }
     @EventHandler public void pluginDisabled(PluginDisableEvent event) { reconnectLater(event.getPlugin()); }
     private void reconnectLater(Plugin changed) {
@@ -121,6 +153,7 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         sender.sendMessage("§7Economy: §f"+economyStatus());
         String jobsState = !enabled("jobs-leaderboard") ? "Disabled" : active("NovaraJobs") == null ? "Missing NovaraJobs" : "Ready";
         sender.sendMessage("§7Jobs snapshot: §f"+jobsState);
+        sender.sendMessage("§7Astral rewards: §f"+(enabled("astral-rewards") ? "Ready (companion delivery command required)" : "Disabled"));
         sender.sendMessage("§7AstralLeaderboard: §f"+(active("AstralLeaderboard") == null ? "Not installed" : "Installed (updated build required)"));
         if (sender instanceof Player player) try { sender.sendMessage("§7Your progression rank: §f"+progressionRank(player.getUniqueId())); }
         catch (RuntimeException ignored) {}
@@ -131,3 +164,4 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         return List.of("status","reload").stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
     }
 }
+

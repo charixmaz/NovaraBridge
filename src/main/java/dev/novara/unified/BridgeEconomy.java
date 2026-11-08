@@ -32,3 +32,4 @@ final class BridgeEconomy {
         return result != null && result.transactionSuccess();
     }
 }
+

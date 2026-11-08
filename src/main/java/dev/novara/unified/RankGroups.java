@@ -18,3 +18,4 @@ public final class RankGroups {
         return Map.copyOf(groups);
     }
 }
+

@@ -73,3 +73,4 @@ class BridgeEconomyTest {
         enabled.set(true); services.unregisterAll(essentials); assertThrows(IllegalStateException.class,adapter::status);
     }
 }
+
