@@ -72,3 +72,14 @@ Adds novarabridge_rank_6 and novarabridge_rank_7 to default group mappings.
 Startup and reload add missing defaults while preserving owner overrides and disabled integrations.
 Use with Novara Ranks & Tags 0.7.0 for seven-rank progression.
 No economy or rank benefit amounts changed; existing Jobs/bank policies still apply.
+
+
+## Astral reward delivery
+
+Configure `rewards` in AstralLeaderboard's config, then set `rewards.enabled: true`. Cash values use dollars (5000 means $5,000); commands run as console without a leading slash and accept `{player}` / `{uuid}`. Add the actual commands for your paid-rank group, tag system and plushie/item plugin. Empty command lists grant no rank, tag or item. The top-three Cash defaults are 0, 5000, 2000. Configure each category separately under `rewards.categories.<board>.<place>` when different boards need different prizes.
+
+After archiving a season, use `/astral reward <season> <blocks|balance|mcmmo|jobs> <place> deliver`. Requires `astral.admin`. The bridge must also have `integrations.astral-rewards: true`. `paid` and `unpaid` retain their manual bookkeeping behavior; they do not grant prizes. This change adds manual delivery, not an automatic season scheduler or rewards display.
+
+Bridge receipts in `reward-journal.properties` bind each season/category/place to a recipient and exact action plan. Completed steps are skipped on repeat calls; steps left PENDING after a crash, command failure or ambiguous response require staff reconciliation against the actual economy/permission/item state. Do not erase receipts to retry. Already executed console commands cannot be rolled back. A command returning success only confirms dispatch; use the installed plugin's documented grant commands and verify them on a test server. Item commands may require an online player with inventory space; plan their use accordingly.
+
+Paid ranks and tags should use their own grant commands. Example for a defined tag permission: `lp user {uuid} permission set novara.tags.tag.unforgiven true` (the corresponding tag must exist in Ranks & Tags config). Configure the real paid group and duration explicitly; the bridge does not guess them. Plushies require your actual item plugin command.

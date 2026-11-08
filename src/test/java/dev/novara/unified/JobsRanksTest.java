@@ -17,3 +17,4 @@ class JobsRanksTest {
         assertThrows(IllegalArgumentException.class,() -> JobsRanks.provider(WrongApi.class,id -> 1));
     }
 }
+

@@ -36,3 +36,4 @@ class RankGroupsTest {
         assertEquals("novarabridge_rank_7",restored.getString("rank-groups.7"));
     }
 }
+

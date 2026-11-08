@@ -12,3 +12,4 @@ commands:
 permissions:
   novarabridge.admin:
     default: op
+
