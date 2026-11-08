@@ -79,7 +79,7 @@ public final class MilestoneRewardConfig {
         for(Map<?,?> item:section.getMapList("items")){
             String material=String.valueOf(item.get("material")).toUpperCase(Locale.ROOT);
             Material type=Material.matchMaterial(material);
-            if(type==null||!type.isItem()||type.isAir())throw new IllegalArgumentException("Invalid item at "+path+": "+material);
+            if(type==null||material.equals("AIR")||material.endsWith("_AIR"))throw new IllegalArgumentException("Invalid item at "+path+": "+material);
             int amount=quantity(item.get("amount"),path+".items",1,64);
             steps.add("item:"+material+":"+amount);labels.add(amount+"x "+material);
         }
