@@ -21,8 +21,15 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         try { rewardJournal = new RewardJournal(getDataFolder().toPath().resolve("reward-journal.properties")); }
         catch (java.io.IOException error) { throw new IllegalStateException("Cannot load reward receipts; refusing payouts",error); }
         saveDefaultConfig();
-        try{milestoneDelivery=new MilestoneDelivery(this,rewardJournal);milestoneDelivery.reload();}
-        catch(Exception error){throw new IllegalStateException("Invalid rewards.yml: "+error.getMessage(),error);}
+        try{milestoneDelivery=new MilestoneDelivery(this,rewardJournal);}
+        catch(Exception error){throw new IllegalStateException("Cannot parse rewards.yml: "+error.getMessage(),error);}
+        try{milestoneDelivery.reload();}
+        catch(Exception invalid){
+            // A missing tag on an older server config must not take down the
+            // shared Vault/economy bridge. The reward remains waiting.
+            getLogger().severe("Reward configuration needs attention: "+invalid.getMessage()+
+                " (bridge economy and rank sync remain active)");
+        }
         getConfig().options().copyDefaults(true);
         saveConfig();
         Bukkit.getPluginManager().registerEvents(this,this);
