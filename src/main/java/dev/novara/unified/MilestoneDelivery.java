@@ -55,6 +55,29 @@ final class MilestoneDelivery {
         config=candidate;
     }
     List<String> describe(String id) {return config.description(id);}
+    Map<Integer,List<String>> jobSummaries(String job){
+        Map<Integer,List<String>> result=new TreeMap<>();
+        if(job==null || !job.matches("[A-Z_]+"))return result;
+        for(String key:config.keys())if(key.startsWith("job:"+job+":")){
+            try{result.put(Integer.parseInt(key.substring(("job:"+job+":").length())),
+                config.description(key));}
+            catch(NumberFormatException ignored){}
+        }
+        return Collections.unmodifiableMap(result);
+    }
+    List<String> pendingDetails(UUID player){
+        List<String> lines=new ArrayList<>();
+        for(var claim:journal.pendingMilestones(player))
+            lines.add(claim.operation()+" "+claim.states());
+        return List.copyOf(lines);
+    }
+    void resolve(String operation,int index,boolean delivered)throws IOException{
+        checkThread();
+        journal.markStep(operation,index,"IN_FLIGHT",delivered?"DONE":"READY");
+        if(!delivered){
+            for(var player:Bukkit.getOnlinePlayers())pump(player.getUniqueId());
+        }
+    }
     Set<String> keys(){return config.keys();}
     List<String> warnings() {
         Set<String> notes=new LinkedHashSet<>();
