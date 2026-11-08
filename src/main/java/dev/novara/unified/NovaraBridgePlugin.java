@@ -14,12 +14,15 @@ import java.util.function.Consumer;
 public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
     private RankSync sync;
     private RewardJournal rewardJournal;
+    private MilestoneDelivery milestoneDelivery;
     private String rankStatus = "Not connected";
     private String syncStatus = "Not connected";
     @Override public void onEnable() {
         try { rewardJournal = new RewardJournal(getDataFolder().toPath().resolve("reward-journal.properties")); }
         catch (java.io.IOException error) { throw new IllegalStateException("Cannot load reward receipts; refusing payouts",error); }
         saveDefaultConfig();
+        try{milestoneDelivery=new MilestoneDelivery(this,rewardJournal);milestoneDelivery.reload();}
+        catch(Exception error){throw new IllegalStateException("Invalid rewards.yml: "+error.getMessage(),error);}
         getConfig().options().copyDefaults(true);
         saveConfig();
         Bukkit.getPluginManager().registerEvents(this,this);
@@ -27,6 +30,9 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             if (sync != null && ranksPlugin() != null) sync.tick();
         }, 20, Math.max(1, Math.min(300, getConfig().getInt("sync-interval-seconds",5))) * 20L);
+        Bukkit.getScheduler().runTaskTimer(this,()->{
+            for(Player online:Bukkit.getOnlinePlayers())milestoneDelivery.pump(online.getUniqueId());
+        },120L,1200L);
     }
     @Override public void onDisable() { Bukkit.getServicesManager().unregisterAll(this); sync = null; }
     private boolean enabled(String integration) { return getConfig().getBoolean("integrations."+integration,true); }
@@ -105,6 +111,26 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         try { jobs.getClass().getMethod("astralLeaderboardSnapshot",Consumer.class).invoke(jobs,callback); }
         catch (ReflectiveOperationException e) { throw new IllegalStateException("Jobs snapshot API unavailable",e); }
     }
+    /** Stored reward plan is owned by NovaraBridge, not copied to each plugin. */
+    public boolean claimJobMilestone(UUID player,String job,int level){
+        mainThread();
+        if(player==null||job==null||!job.matches("[A-Z_]+")||level<1||level>50)
+            throw new IllegalArgumentException("Invalid job milestone");
+        return milestoneDelivery.claimJob(player,job,level);
+    }
+    public boolean claimRankUpgrade(UUID player,int rank){
+        mainThread();
+        if(player==null||rank<2||rank>10)throw new IllegalArgumentException("Invalid rank reward");
+        return milestoneDelivery.claimRank(player,rank);
+    }
+    public java.util.List<String> rewardDescriptions(String rule){
+        mainThread();return milestoneDelivery.describe(rule);
+    }
+    /** Checks tags/pouch tiers against the active source plugins and shows missing dependencies. */
+    public java.util.List<String> rewardProblems(){
+        mainThread();return milestoneDelivery.warnings();
+    }
+
     /** Astral owns reward configuration. Operation must remain season/category/place stable. */
     public boolean astralReward(UUID player, String operation, long cents, List<String> commands) {
         mainThread();
@@ -134,6 +160,10 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
                 : Bukkit.dispatchCommand(Bukkit.getConsoleSender(),step.substring(8)));
         } catch (java.io.IOException error) { throw new IllegalStateException("Reward receipt write failed; inspect before retrying",error); }
     }
+    @EventHandler public void onJoin(org.bukkit.event.player.PlayerJoinEvent event){
+        Bukkit.getScheduler().runTaskLater(this,()->
+            milestoneDelivery.pump(event.getPlayer().getUniqueId()),40L);
+    }
     @EventHandler public void pluginEnabled(PluginEnableEvent event) { reconnectLater(event.getPlugin()); }
     @EventHandler public void pluginDisabled(PluginDisableEvent event) { reconnectLater(event.getPlugin()); }
     private void reconnectLater(Plugin changed) {
@@ -142,8 +172,22 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
     }
     @Override public boolean onCommand(CommandSender sender,Command command,String label,String[] args) {
         if (!sender.hasPermission("novarabridge.admin")) { sender.sendMessage("§cNo permission."); return true; }
+        if(args.length>=1 && args[0].equalsIgnoreCase("rewards")){
+            if(args.length==2&&args[1].equalsIgnoreCase("reload")){
+                try{milestoneDelivery.reload();sender.sendMessage("§aNovaraBridge rewards.yml reloaded.");}
+                catch(Exception invalid){sender.sendMessage("§cReward configuration rejected: "+invalid.getMessage());}
+                return true;
+            }
+            sender.sendMessage("§bReward claims pending or requiring review: §f"+milestoneDelivery.pending());
+            for(String note:milestoneDelivery.warnings())sender.sendMessage("§e"+note);
+            sender.sendMessage("§7/nb rewards reload | status");
+            return true;
+        }
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
-            reloadConfig();getConfig().options().copyDefaults(true);saveConfig();connect(); sender.sendMessage("§aBridge connections reloaded. Restart to apply sync interval changes.");
+            reloadConfig();getConfig().options().copyDefaults(true);saveConfig();connect();
+            try{milestoneDelivery.reload();}
+            catch(Exception invalid){sender.sendMessage("§cRewards kept previous settings: "+invalid.getMessage());}
+            sender.sendMessage("§aBridge connections reloaded. Restart to apply sync interval changes.");
         } else if (args.length > 0 && !args[0].equalsIgnoreCase("status")) {
             sender.sendMessage("/novarabridge status | reload"); return true;
         }
@@ -154,6 +198,7 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         String jobsState = !enabled("jobs-leaderboard") ? "Disabled" : active("NovaraJobs") == null ? "Missing NovaraJobs" : "Ready";
         sender.sendMessage("§7Jobs snapshot: §f"+jobsState);
         sender.sendMessage("§7Astral rewards: §f"+(enabled("astral-rewards") ? "Ready (companion delivery command required)" : "Disabled"));
+        sender.sendMessage("§7Milestone reward claims pending/review: §f"+milestoneDelivery.pending());
         sender.sendMessage("§7AstralLeaderboard: §f"+(active("AstralLeaderboard") == null ? "Not installed" : "Installed (updated build required)"));
         if (sender instanceof Player player) try { sender.sendMessage("§7Your progression rank: §f"+progressionRank(player.getUniqueId())); }
         catch (RuntimeException ignored) {}
@@ -161,7 +206,7 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
     }
     @Override public List<String> onTabComplete(CommandSender sender,Command command,String alias,String[] args) {
         if (!sender.hasPermission("novarabridge.admin") || args.length != 1) return List.of();
-        return List.of("status","reload").stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
+        return List.of("status","reload","rewards").stream().filter(s -> s.startsWith(args[0].toLowerCase(Locale.ROOT))).toList();
     }
 }
 
