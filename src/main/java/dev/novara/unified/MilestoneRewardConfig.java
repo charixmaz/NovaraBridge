@@ -65,7 +65,8 @@ public final class MilestoneRewardConfig {
             String tier=String.valueOf(pouch.get("rarity")).toLowerCase(Locale.ROOT);
             if(!Set.of("common","uncommon","epic","legendary","apex").contains(tier))
                 throw new IllegalArgumentException("Invalid pouch rarity at "+path+": "+tier);
-            int amount=quantity(pouch.get("quantity"),path+".pouches",1,64);
+            // Max 36 non-stackable pouches can fit in an empty vanilla inventory.
+            int amount=quantity(pouch.get("quantity"),path+".pouches",1,36);
             steps.add("pouch:"+tier+":"+amount);labels.add(amount+"x "+tier+" pouch");
         }
         if(section.contains("money")){

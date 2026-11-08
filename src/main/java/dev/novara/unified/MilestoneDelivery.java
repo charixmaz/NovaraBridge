@@ -207,7 +207,17 @@ final class MilestoneDelivery {
                 invokeBoolean(pouch,"rewardPouchSpace",new Class<?>[]{UUID.class,int.class},
                     player.getUniqueId(),Integer.parseInt(s[2]));
         }
-        if(step.startsWith("item:"))return player.getInventory().firstEmpty()>=0;
+        if(step.startsWith("item:")){
+            String[] parts=step.split(":");
+            Material material=Material.matchMaterial(parts[1]);
+            if(material==null||!material.isItem())return false;
+            int count=Integer.parseInt(parts[2]);
+            int stack=material.getMaxStackSize();
+            int required=(count+stack-1)/stack,free=0;
+            for(var item:player.getInventory().getStorageContents())
+                if(item==null||item.getType().isAir())free++;
+            return free>=required;
+        }
         if(step.startsWith("cash:"))return bridge.economyStatus().startsWith("Ready:");
         if(step.startsWith("permission:"))return active("LuckPerms")!=null;
         if(step.startsWith("command:")){
