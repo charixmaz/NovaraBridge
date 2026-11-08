@@ -59,7 +59,7 @@ jobs:
         - 'say {player} reached Farmer level 20'
 ```
 
-The example above is a **fragment** to merge under the existing `jobs:` key; do not create a second top-level `jobs:` in YAML. Valid built-in pouch tier IDs: `common`, `uncommon`, `epic`, `legendary`, `apex`. Quantity and stack limits are validated. Console commands have **no leading /**. Placeholder variables: `{player}`, `{uuid}`. Only server owners should edit reward commands.
+The example above is a **fragment** to merge under the existing `jobs:` key; do not create a second top-level `jobs:` in YAML. Valid built-in pouch tier IDs: `common`, `uncommon`, `epic`, `legendary`, `apex`. Pouch quantity is 1–36 per reward entry (one pouch per inventory slot); item quantities are 1–64 and need sufficient space for their stack size. For more than 36 pouches, use multiple separate reward entries and allow the player to free slots between deliveries. Quantity and stack limits are validated. Console commands have **no leading /**. Placeholder variables: `{player}`, `{uuid}`. Only server owners should edit reward commands.
 
 ## How delivery works
 
