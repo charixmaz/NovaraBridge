@@ -187,8 +187,14 @@ final class MilestoneDelivery {
             Bukkit.getScheduler().runTask(bridge,()->finishAsync(operation,id,index,success));return;
         }
         if(!success){bridge.getLogger().severe("Reward step needs REVIEW after async external action: "+operation+" #"+index);return;}
-        try{journal.markStep(operation,index,"IN_FLIGHT","DONE");pump(id);}
-        catch(IOException | RuntimeException e){bridge.getLogger().severe("Reward receipt update failed: "+operation+" "+e.getMessage());}
+        try{
+            journal.markStep(operation,index,"IN_FLIGHT","DONE");
+            // An already-owned tag may call back synchronously while the outer
+            // pump is busy. Continue on the next tick, never one minute later.
+            Bukkit.getScheduler().runTask(bridge,()->pump(id));
+        }catch(IOException | RuntimeException e){
+            bridge.getLogger().severe("Reward receipt update failed: "+operation+" "+e.getMessage());
+        }
     }
     private boolean preflight(Player player,String step){
         if(step.startsWith("tag:"))return active("NovaraRanksTags")!=null &&
