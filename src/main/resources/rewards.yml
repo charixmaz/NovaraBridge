@@ -1,0 +1,34 @@
+# Owner-editable milestone and rank upgrade reward definitions.
+# Rewards are delivered by NovaraBridge only. Changes affect NEW claims;
+# already queued deliveries keep their original immutable reward plan.
+# Missing integrations or a full inventory leave a claim waiting for retry.
+jobs:
+  MINER:
+    '30':
+      tags: [miner]
+      pouches:
+        - rarity: uncommon
+          quantity: 1
+  HUNTER:
+    '50':
+      tags: [hunter]
+      pouches:
+        - rarity: legendary
+          quantity: 1
+
+ranks:
+  '2':
+    pouches:
+      - rarity: common
+        quantity: 1
+
+# Optional action keys at any milestone/rank:
+#   money: 250.00
+#   items:
+#     - material: DIAMOND
+#       amount: 2
+#   permissions: [starfall.perks.miner]
+#   commands: ['say {player} achieved a milestone']
+# Tags are permanently added to the user's /tags collection, NEVER equipped.
+# Admin backfill (not automatic): /nj rewards grant-missed PLAYER JOB LEVEL
+# Rank reward grants are triggered on confirmed upgrades only.
