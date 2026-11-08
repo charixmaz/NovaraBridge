@@ -6,7 +6,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MilestoneRewardConfigTest {
     private static MilestoneRewardConfig parse(String yaml){
-        var y=new YamlConfiguration();y.loadFromString(yaml);return MilestoneRewardConfig.parse(y);
+        var y=new YamlConfiguration();
+        try{y.loadFromString(yaml);}catch(org.bukkit.configuration.InvalidConfigurationException e){
+            throw new IllegalArgumentException("Malformed test YAML",e);
+        }
+        return MilestoneRewardConfig.parse(y);
     }
     @Test void parsesJobAndRankPlans(){
         var settings=parse("""
