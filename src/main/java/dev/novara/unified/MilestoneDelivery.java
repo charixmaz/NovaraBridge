@@ -107,6 +107,42 @@ final class MilestoneDelivery {
     boolean claimRank(UUID id,int rank) {
         return enqueue(id,"rank:"+rank,"rank:"+id+":"+rank);
     }
+    /** Single, persistent unlock at 20 successfully paid worker contracts.
+     * Uses the same immutable receipt as job, rank and quest rewards.
+     */
+    boolean claimContract(UUID id,int completed,String snapshot){
+        checkThread();
+        if(id==null || completed!=20)throw new IllegalArgumentException(
+            "Contractor milestone is 20 completed contracts");
+        var rule=MilestoneRewardConfig.parseBonus(snapshot);
+        String operation="contract:"+id+":20";
+        try{
+            journal.queueMilestone(operation,id,rule.actions());
+            pump(id);
+            return true;
+        }catch(IOException | RuntimeException error){
+            bridge.getLogger().warning("Cannot queue contractor reward "+operation+": "+error.getMessage());
+            return false;
+        }
+    }
+    boolean claimQuest(UUID id,String questId,String period,String snapshot){
+        checkThread();
+        if(id==null||questId==null||!questId.matches("[a-z0-9_-]{3,40}")
+            ||period==null||!period.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}"))
+            throw new IllegalArgumentException("Invalid quest operation identity");
+        // Unlike ordinary milestone YAML, this is the accepted quest's
+        // immutable reward snapshot persisted in the Jobs SQLite outbox.
+        var rule=MilestoneRewardConfig.parseBonus(snapshot);
+        String operation="quest:"+id+":"+questId+":"+period;
+        try{
+            journal.queueMilestone(operation,id,rule.actions());
+            pump(id);
+            return true;
+        }catch(IOException | RuntimeException error){
+            bridge.getLogger().warning("Cannot queue quest "+operation+": "+error.getMessage());
+            return false;
+        }
+    }
     private boolean enqueue(UUID player,String key,String operation) {
         checkThread();
         var rule=config.rule(key);

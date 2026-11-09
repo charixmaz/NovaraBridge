@@ -130,6 +130,20 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         if(player==null||rank<2||rank>10)throw new IllegalArgumentException("Invalid rank reward");
         return milestoneDelivery.claimRank(player,rank);
     }
+    /** Quest-specific immutable bonus plan, persisted by Jobs on acceptance. */
+    /** NovaraJobs ContractService entrypoint; one durable grant per worker at 20 paid contracts. */
+    public boolean claimContractMilestone(UUID worker,int completed,String bonusYaml){
+        mainThread();
+        return milestoneDelivery.claimContract(worker,completed,bonusYaml);
+    }
+    public boolean claimQuestReward(UUID player,String questId,String period,String rewardYaml){
+        mainThread();
+        return milestoneDelivery.claimQuest(player,questId,period,rewardYaml);
+    }
+    public java.util.List<String> questRewardDescriptions(String rewardYaml){
+        mainThread();
+        return MilestoneRewardConfig.parseBonus(rewardYaml).descriptions();
+    }
     public java.util.List<String> rewardDescriptions(String rule){
         mainThread();return milestoneDelivery.describe(rule);
     }

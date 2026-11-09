@@ -38,7 +38,7 @@ final class RewardJournal {
     /** Journaled, immutable milestone delivery. Astral's existing journal stays unchanged. */
     record Claim(String operation,UUID player,List<String> steps,List<String> states) {}
     synchronized void queueMilestone(String operation,UUID player,List<String> steps)throws IOException {
-        if(operation==null||!operation.matches("(job:[0-9a-f-]{36}:[A-Z_]+:[0-9]+|rank:[0-9a-f-]{36}:[0-9]+)"))
+        if(operation==null||!operation.matches("(job:[0-9a-f-]{36}:[A-Z_]+:[0-9]+|rank:[0-9a-f-]{36}:[0-9]+|quest:[0-9a-f-]{36}:[a-z0-9_-]{3,40}:[0-9]{4}-[0-9]{2}-[0-9]{2}|contract:[0-9a-f-]{36}:20)"))
             throw new IllegalArgumentException("Invalid milestone operation");
         if(player==null||steps==null||steps.isEmpty()||steps.size()>32)
             throw new IllegalArgumentException("Empty or invalid milestone reward");
