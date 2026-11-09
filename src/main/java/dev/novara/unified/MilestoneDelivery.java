@@ -107,6 +107,24 @@ final class MilestoneDelivery {
     boolean claimRank(UUID id,int rank) {
         return enqueue(id,"rank:"+rank,"rank:"+id+":"+rank);
     }
+    boolean claimQuest(UUID id,String questId,String period,String snapshot){
+        checkThread();
+        if(id==null||questId==null||!questId.matches("[a-z0-9_-]{3,40}")
+            ||period==null||!period.matches("[0-9]{4}-[0-9]{2}-[0-9]{2}"))
+            throw new IllegalArgumentException("Invalid quest operation identity");
+        // Unlike ordinary milestone YAML, this is the accepted quest's
+        // immutable reward snapshot persisted in the Jobs SQLite outbox.
+        var rule=MilestoneRewardConfig.parseBonus(snapshot);
+        String operation="quest:"+id+":"+questId+":"+period;
+        try{
+            journal.queueMilestone(operation,id,rule.actions());
+            pump(id);
+            return true;
+        }catch(IOException | RuntimeException error){
+            bridge.getLogger().warning("Cannot queue quest "+operation+": "+error.getMessage());
+            return false;
+        }
+    }
     private boolean enqueue(UUID player,String key,String operation) {
         checkThread();
         var rule=config.rule(key);

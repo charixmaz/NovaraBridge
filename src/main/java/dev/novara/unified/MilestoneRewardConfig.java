@@ -48,6 +48,17 @@ public final class MilestoneRewardConfig {
         }
         return new MilestoneRewardConfig(parsed);
     }
+    /** Validates a self-contained immutable quest bonus snapshot from NovaraJobs. */
+    public static Rule parseBonus(String yamlText){
+        if(yamlText==null||yamlText.length()>12_000)
+            throw new IllegalArgumentException("Invalid quest bonus snapshot");
+        var yaml=new YamlConfiguration();
+        try{yaml.loadFromString(yamlText);}
+        catch(org.bukkit.configuration.InvalidConfigurationException error){
+            throw new IllegalArgumentException("Invalid quest reward YAML",error);
+        }
+        return parseRule(yaml.getConfigurationSection("bonus"),"quest.bonus");
+    }
     private static int parseInt(String raw,String what,int min,int max){
         int v;
         try{v=Integer.parseInt(raw);}catch(NumberFormatException invalid){throw new IllegalArgumentException("Invalid "+what+": "+raw);}
