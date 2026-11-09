@@ -39,6 +39,25 @@ class MilestoneRewardConfigTest {
         assertEquals(java.util.List.of("pouch:common:1"),settings.rule("rank:2").actions());
         assertEquals(6,settings.description("job:MINER:30").size());
     }
+    @Test void questBonusSnapshotsUseSharedValidation(){
+        var rule=MilestoneRewardConfig.parseBonus("""
+            bonus:
+              tags: [miner]
+              pouches:
+                - rarity: uncommon
+                  quantity: 1
+              items:
+                - material: DIAMOND
+                  amount: 2
+            """);
+        assertEquals(java.util.List.of("tag:miner","pouch:uncommon:1",
+            "item:DIAMOND:2"),rule.actions());
+        assertEquals(3,rule.descriptions().size());
+        assertThrows(IllegalArgumentException.class,()->
+            MilestoneRewardConfig.parseBonus("bonus:\n  pouches:\n    - rarity: mythic\n      quantity: 1"));
+        assertThrows(IllegalArgumentException.class,()->
+            MilestoneRewardConfig.parseBonus("bonus:\n  tags: ['Bad Tag']"));
+    }
     @Test void invalidTagsTiersAndQuantitiesFailWithLocation(){
         assertTrue(assertThrows(IllegalArgumentException.class,()->
             parse("jobs:\n  MINER:\n    '30':\n      tags: ['Bad Tag']")).getMessage().contains("Invalid tag"));

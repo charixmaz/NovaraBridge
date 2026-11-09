@@ -8,6 +8,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MilestoneJournalTest {
     @TempDir Path folder;
+    @Test void questReceiptIsImmutableAndSurvivesRestart()throws Exception{
+        Path path=folder.resolve("quest-journal.properties");
+        UUID player=UUID.randomUUID();
+        String operation="quest:"+player+":hunt_villagers:2026-11-09";
+        var journal=new RewardJournal(path);
+        journal.queueMilestone(operation,player,List.of("tag:hunter","pouch:uncommon:1"));
+        journal.markStep(operation,0,"READY","IN_FLIGHT");
+        journal.markStep(operation,0,"IN_FLIGHT","DONE");
+        var restarted=new RewardJournal(path);
+        restarted.queueMilestone(operation,player,List.of("tag:adventurer"));
+        var resume=restarted.pendingMilestones(player).getFirst();
+        assertEquals(2,resume.steps().size());
+        assertEquals("tag:hunter",resume.steps().getFirst());
+        assertEquals(java.util.List.of("DONE","READY"),resume.states());
+    }
     @Test void onlyOneImmutableClaimAndPerStepReceiptAcrossRestart()throws Exception{
         Path path=folder.resolve("rewards.properties");
         UUID player=UUID.randomUUID();
