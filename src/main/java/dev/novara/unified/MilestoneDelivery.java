@@ -107,6 +107,24 @@ final class MilestoneDelivery {
     boolean claimRank(UUID id,int rank) {
         return enqueue(id,"rank:"+rank,"rank:"+id+":"+rank);
     }
+    /** Single, persistent unlock at 20 successfully paid worker contracts.
+     * Uses the same immutable receipt as job, rank and quest rewards.
+     */
+    boolean claimContract(UUID id,int completed,String snapshot){
+        checkThread();
+        if(id==null || completed!=20)throw new IllegalArgumentException(
+            "Contractor milestone is 20 completed contracts");
+        var rule=MilestoneRewardConfig.parseBonus(snapshot);
+        String operation="contract:"+id+":20";
+        try{
+            journal.queueMilestone(operation,id,rule.actions());
+            pump(id);
+            return true;
+        }catch(IOException | RuntimeException error){
+            bridge.getLogger().warning("Cannot queue contractor reward "+operation+": "+error.getMessage());
+            return false;
+        }
+    }
     boolean claimQuest(UUID id,String questId,String period,String snapshot){
         checkThread();
         if(id==null||questId==null||!questId.matches("[a-z0-9_-]{3,40}")
