@@ -155,6 +155,13 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         mainThread();return milestoneDelivery.warnings();
     }
 
+    /** Read-only aggregate receipt audit for ArcaneTester; never replays delivery. */
+    public java.util.Map<String,Long> arcaneTesterIntegrityAudit() {
+        mainThread();
+        if (rewardJournal == null) return java.util.Map.of("audit_error",1L);
+        return rewardJournal.arcaneTesterIntegrityAudit();
+    }
+
     /** Astral owns reward configuration. Operation must remain season/category/place stable. */
     public boolean astralReward(UUID player, String operation, long cents, List<String> commands) {
         mainThread();

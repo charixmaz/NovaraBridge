@@ -105,6 +105,47 @@ final class RewardJournal {
         }
         return result;
     }
+    /** Aggregate-only read-only milestone audit; no reward issue, replay or file write. */
+    synchronized Map<String,Long> arcaneTesterIntegrityAudit() {
+        long milestones=0, steps=0, ready=0, inFlight=0, done=0, malformed=0;
+        for (String key : records.stringPropertyNames()) {
+            if (!key.startsWith("milestone.") || !key.endsWith(".signature")) continue;
+            milestones++;
+            String root=key.substring(0,key.length()-".signature".length());
+            try {
+                String operation=Objects.requireNonNull(records.getProperty(root+".operation"));
+                String player=Objects.requireNonNull(records.getProperty(root+".player"));
+                UUID uuid=UUID.fromString(player);
+                if (!root.equals("milestone."+digest(operation)) ||
+                    !operation.contains(uuid.toString())) throw new IllegalArgumentException("Invalid operation receipt");
+                int count=Integer.parseInt(records.getProperty(root+".count","0"));
+                if (count<1 || count>32) throw new IllegalArgumentException("Invalid step count");
+                List<String> actions=new ArrayList<>();
+                for (int i=0;i<count;i++) {
+                    String data=Objects.requireNonNull(records.getProperty(root+".action."+i));
+                    actions.add(new String(Base64.getDecoder().decode(data),
+                        java.nio.charset.StandardCharsets.UTF_8));
+                    if (actions.getLast().isBlank()) throw new IllegalArgumentException("Blank reward action");
+                    String state=records.getProperty(root+".state."+i,"");
+                    switch(state) {
+                        case "READY" -> ready++;
+                        case "IN_FLIGHT", "REVIEW" -> inFlight++;
+                        case "DONE" -> done++;
+                        default -> throw new IllegalArgumentException("Unknown receipt state");
+                    }
+                    steps++;
+                }
+                String signature=uuid+":"+digest(String.join("\n",actions));
+                if (!signature.equals(records.getProperty(root+".signature")))
+                    throw new IllegalArgumentException("Milestone plan fingerprint mismatch");
+            } catch (RuntimeException corruption) {
+                malformed++;
+            }
+        }
+        return Map.of("milestones",milestones,"steps",steps,
+            "ready",ready,"in_flight",inFlight,"done",done,"malformed_receipts",malformed);
+    }
+
     private void save() throws IOException {
         Files.createDirectories(file.getParent());
         Path temporary = file.resolveSibling(file.getFileName()+".tmp");
