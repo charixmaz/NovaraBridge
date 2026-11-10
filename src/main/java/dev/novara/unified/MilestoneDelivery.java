@@ -274,6 +274,10 @@ final class MilestoneDelivery {
         catch(ReflectiveOperationException|LinkageError error){return false;}
     }
     @SuppressWarnings("unchecked")
+    /** NovaraRanksTags.grantRewardTag now issues a receipt-linked voucher
+     * into inventory instead of modifying the owned tag collection.
+     * Journal IN_FLIGHT protects against duplicate issues after a crash.
+     */
     private void invokeTagGrant(Player p,String tag,String receipt,Consumer<Boolean> done)throws Exception {
         Plugin ranks=active("NovaraRanksTags");
         if(ranks==null)throw new IllegalStateException("NovaraRanksTags unavailable");
