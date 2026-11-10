@@ -84,7 +84,9 @@ final class MilestoneDelivery {
         for(String key:config.keys())for(String step:config.rule(key).actions()){
             if(step.startsWith("tag:")){
                 var ranks=active("NovaraRanksTags");
-                if(ranks==null)notes.add("Missing NovaraRanksTags: tag grants wait");
+                if(ranks==null)notes.add("Missing NovaraRanksTags: tag vouchers wait");
+                else if(!voucherApi(ranks))
+                    notes.add("NovaraRanksTags is too old: update it before any reward can issue a tag voucher");
                 else if(!invokeBoolean(ranks,"rewardTagExists",new Class<?>[]{String.class},step.substring(4)))
                     notes.add("Invalid or missing NovaraRanksTags tag ID '"+step.substring(4)+"' at "+key);
             }
@@ -233,9 +235,12 @@ final class MilestoneDelivery {
         }
     }
     private boolean preflight(Player player,String step){
-        if(step.startsWith("tag:"))return active("NovaraRanksTags")!=null &&
-            invokeBoolean(active("NovaraRanksTags"),"rewardTagReady",
-                new Class<?>[]{UUID.class,String.class},player.getUniqueId(),step.substring(4));
+        if(step.startsWith("tag:")){
+            Plugin ranks=active("NovaraRanksTags");
+            return ranks!=null&&voucherApi(ranks)&&
+                invokeBoolean(ranks,"rewardTagReady",
+                    new Class<?>[]{UUID.class,String.class},player.getUniqueId(),step.substring(4));
+        }
         if(step.startsWith("pouch:")){
             Plugin pouch=active("NovaraPouches");
             String[] s=step.split(":");
@@ -264,6 +269,12 @@ final class MilestoneDelivery {
         }
         return false;
     }
+    /** Do not silently unlock tags via a stale Ranks & Tags JAR.
+     * Missing handshake leaves the reward journal step READY, not spent.
+     */
+    private boolean voucherApi(Plugin ranks){
+        return invokeBoolean(ranks,"rewardTagVouchersSupported",new Class<?>[0]);
+    }
     private Plugin active(String name){
         Plugin p=Bukkit.getPluginManager().getPlugin(name);
         return p!=null&&p.isEnabled()?p:null;
@@ -274,6 +285,10 @@ final class MilestoneDelivery {
         catch(ReflectiveOperationException|LinkageError error){return false;}
     }
     @SuppressWarnings("unchecked")
+    /** NovaraRanksTags.grantRewardTag now issues a receipt-linked voucher
+     * into inventory instead of modifying the owned tag collection.
+     * Journal IN_FLIGHT protects against duplicate issues after a crash.
+     */
     private void invokeTagGrant(Player p,String tag,String receipt,Consumer<Boolean> done)throws Exception {
         Plugin ranks=active("NovaraRanksTags");
         if(ranks==null)throw new IllegalStateException("NovaraRanksTags unavailable");

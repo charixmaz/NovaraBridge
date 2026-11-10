@@ -70,7 +70,9 @@ public final class MilestoneRewardConfig {
         List<String> steps=new ArrayList<>(),labels=new ArrayList<>();
         for(String tag:section.getStringList("tags")){
             if(!tag.matches("[a-z0-9_-]+"))throw new IllegalArgumentException("Invalid tag ID at "+path+": "+tag);
-            steps.add("tag:"+tag);labels.add("Tag: "+tag);
+            // The tag is delivered through Novara Ranks & Tags as a physical
+            // voucher. Only /acquire unlocks it into the tag collection.
+            steps.add("tag:"+tag);labels.add("Tag voucher: "+tag+" (/acquire)");
         }
         for(Map<?,?> pouch:section.getMapList("pouches")){
             String tier=String.valueOf(pouch.get("rarity")).toLowerCase(Locale.ROOT);
