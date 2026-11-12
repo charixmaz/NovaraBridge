@@ -19,8 +19,40 @@ jobs:
 ranks:
   '2':
     pouches:
-      - rarity: common
+      - rarity: uncommon
         quantity: 1
+  '3':
+    pouches:
+      - rarity: uncommon
+        quantity: 2
+  '4':
+    pouches:
+      - rarity: epic
+        quantity: 1
+  '5':
+    pouches:
+      - rarity: epic
+        quantity: 2
+  '6':
+    pouches:
+      - rarity: legendary
+        quantity: 1
+  '7':
+    pouches:
+      - rarity: legendary
+        quantity: 2
+  '8':
+    pouches:
+      - rarity: legendary
+        quantity: 3
+  '9':
+    pouches:
+      - rarity: apex
+        quantity: 1
+  '10':
+    pouches:
+      - rarity: apex
+        quantity: 2
 
 # Optional action keys at any milestone/rank:
 #   money: 250.00
