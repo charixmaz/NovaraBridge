@@ -118,6 +118,23 @@ public final class NovaraBridgePlugin extends JavaPlugin implements Listener {
         try { jobs.getClass().getMethod("astralLeaderboardSnapshot",Consumer.class).invoke(jobs,callback); }
         catch (ReflectiveOperationException e) { throw new IllegalStateException("Jobs snapshot API unavailable",e); }
     }
+    /** Single asynchronous authoritative Jobs read for paid progression requirements. */
+    public void rankProgress(UUID player,Consumer<Map<String,Integer>> callback){
+        mainThread();
+        Objects.requireNonNull(player);
+        Objects.requireNonNull(callback);
+        Plugin jobs=active("NovaraJobs");
+        if(!enabled("jobs-leaderboard") || jobs==null) { callback.accept(null); return; }
+        try {
+            @SuppressWarnings("unchecked")
+            Consumer<Map<String,Integer>> pass=callback;
+            jobs.getClass().getMethod("rankProgress",UUID.class,Consumer.class).invoke(jobs,player,pass);
+        } catch (ReflectiveOperationException | RuntimeException failure) {
+            getLogger().warning("NovaraJobs rank progress unavailable: "+failure.getMessage());
+            callback.accept(null);
+        }
+    }
+
     /** Stored reward plan is owned by NovaraBridge, not copied to each plugin. */
     public boolean claimJobMilestone(UUID player,String job,int level){
         mainThread();
