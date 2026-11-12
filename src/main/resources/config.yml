@@ -14,5 +14,42 @@ rank-groups:
   '5': novarabridge_rank_5
   '6': novarabridge_rank_6
   '7': novarabridge_rank_7
+  '8': novarabridge_rank_8
+  '9': novarabridge_rank_9
+  '10': novarabridge_rank_10
+# Added to the dedicated rank group when NovaraBridge starts/reloads.
+# Higher rank groups inherit the previous group. No paid/staff role groups change.
+# Homes require matching entries under EssentialsX config.yml > sethome-multiple.
+# Groups in EssentialsX: starfall_i (1), starfall_ii (3), ... starfall_x (15).
+# Custom NovaraJobs perks (slots/contract limits) are in its ranks.yml/contracts.yml.
+rank-permissions:
+  '1':
+    - essentials.sethome
+    - essentials.sethome.multiple.starfall_i
+  '2':
+    - essentials.hat
+    - essentials.sethome.multiple.starfall_ii
+  '3':
+    - essentials.back
+    - essentials.sethome.multiple.starfall_iii
+  '4':
+    - essentials.workbench
+    - essentials.sethome.multiple.starfall_iv
+  '5':
+    - essentials.anvil
+    - essentials.sethome.multiple.starfall_v
+  '6':
+    - essentials.enderchest
+    - essentials.sethome.multiple.starfall_vi
+  '7':
+    - essentials.sell.hand
+    - essentials.sethome.multiple.starfall_vii
+  '8':
+    - essentials.disposal
+    - essentials.sethome.multiple.starfall_viii
+  '9':
+    - essentials.sethome.multiple.starfall_ix
+  '10':
+    - essentials.sethome.multiple.starfall_x
 sync-interval-seconds: 5
 

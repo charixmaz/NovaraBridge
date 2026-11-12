@@ -20,8 +20,37 @@ final class RankSync {
                 .map(permissions.getGroupManager()::createAndLoadGroup)
                 .toArray(java.util.concurrent.CompletableFuture[]::new))
             .whenComplete((ignored,error) -> {
-                ready = error == null;
-                state = ready ? "Ready" : "Group creation failed: " + error.getClass().getSimpleName();
+                ready = false;
+                if (error != null) {
+                    state = "Group creation failed: " + error.getClass().getSimpleName();
+                    return;
+                }
+                // Configure incremental perks and chain groups, then allow user reconciliation.
+                // No permissions or roles outside our dedicated groups are touched.
+                var saves = new ArrayList<java.util.concurrent.CompletableFuture<?>>();
+                try {
+                    for (var entry : groups.entrySet()) {
+                        var group = permissions.getGroupManager().getGroup(entry.getValue());
+                        if (group == null) throw new IllegalStateException("Missing created group " + entry.getValue());
+                        if (entry.getKey() > 1 && groups.containsKey(entry.getKey()-1))
+                            group.data().add(InheritanceNode.builder(groups.get(entry.getKey()-1)).build());
+                        var section = plugin.getConfig().getStringList("rank-permissions."+entry.getKey());
+                        for (String node : section) {
+                            if (!node.matches("[a-z0-9_.-]+"))
+                                throw new IllegalArgumentException("Invalid rank permission for " + entry.getKey()+": "+node);
+                            group.data().add(net.luckperms.api.node.types.PermissionNode.builder(node).build());
+                        }
+                        saves.add(permissions.getGroupManager().saveGroup(group));
+                    }
+                } catch (RuntimeException invalid) {
+                    state = "Rank permission config invalid: " + invalid.getMessage();
+                    return;
+                }
+                java.util.concurrent.CompletableFuture.allOf(saves.toArray(java.util.concurrent.CompletableFuture[]::new))
+                    .whenComplete((saved,saveFailure)->{
+                        ready = saveFailure == null;
+                        state = ready ? "Ready" : "Rank permission save failed: " + saveFailure.getClass().getSimpleName();
+                    });
             });
     }
     String status() { return state; }
